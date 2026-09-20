@@ -1,5 +1,14 @@
 # SMARTHEAT: AI-Based Heat Wave Prediction, Risk Mapping and Disaster Response Management System
 
+<div align="center">
+
+[![Live Demo](https://img.shields.io/badge/Live%20Platform-smartheat--yxyi.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://smartheat-yxyi.onrender.com)
+[![Swagger UI Docs](https://img.shields.io/badge/OpenAPI%203.0-Interactive%20Docs-blue?style=for-the-badge&logo=swagger)](https://smartheat-yxyi.onrender.com/api/docs)
+[![Python](https://img.shields.io/badge/Python-3.12-yellow?style=for-the-badge&logo=python)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
+
+</div>
+
 > **Internship Topic:** “Heat Wave Response, Recovery, Future Challenges, and the Role of Technology: A Ground-Level Assessment and Preparedness Study.”  
 > **Domain:** Computer Science Engineering (CSE) & Disaster Management  
 > **Platform Type:** 100% Software-Based Web Platform (No physical sensors, hardware, or microcontrollers required)  
