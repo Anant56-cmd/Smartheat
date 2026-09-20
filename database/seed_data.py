@@ -22,17 +22,32 @@ def seed_database(app):
     with app.app_context():
         db.create_all()
         
-        # 1. Seed Admin User
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
+        # 1. Primary Administrator (Anant10 / Anant@15)
+        anant_admin = User.query.filter((User.username == 'Anant10') | (User.email == 'anant@smartheat.gov.in')).first()
+        if not anant_admin:
+            anant_admin = User(
+                username='Anant10',
+                email='anant@smartheat.gov.in',
+                role='admin'
+            )
+            anant_admin.set_password('Anant@15')
+            db.session.add(anant_admin)
+            print(" -> Created primary admin user: Anant10 / Anant@15")
+        else:
+            anant_admin.username = 'Anant10'
+            anant_admin.set_password('Anant@15')
+            anant_admin.role = 'admin'
+
+        # Automated test fallback admin
+        test_admin = User.query.filter_by(username='admin').first()
+        if not test_admin:
+            test_admin = User(
                 username='admin',
                 email='admin@smartheat.gov.in',
                 role='admin'
             )
-            admin.set_password('admin123')
-            db.session.add(admin)
-            print(" -> Created default admin user: admin / admin123")
+            test_admin.set_password('admin123')
+            db.session.add(test_admin)
             
         # 2. Pan-India Locations (24 Major Metropolises & Heatwave Hotspots)
         locations_data = [

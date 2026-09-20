@@ -16,6 +16,7 @@ if __name__ == '__main__':
     print(f"\n========================================================")
     print(f" SMARTHEAT Disaster Response Management System")
     print(f" Server running on: http://{host}:{port}")
-    print(f" Default Admin Credentials: admin / admin123")
+    print(f" Primary Admin: Anant10")
+    print(f" Login & Register: http://{host}:{port}/auth/login")
     print(f"========================================================\n")
     app.run(host=host, port=port, debug=debug)
