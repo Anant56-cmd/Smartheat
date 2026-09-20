@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Interactive GIS Heat-Risk Map{% endblock %}
+{% block page_title %}Interactive GIS Heat-Risk & Facility Geospatial Map{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #gis-map {
+    height: 720px;
+    width: 100%;
+    border-radius: 0.75rem;
+  }
+  .map-overlay-panel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Map Controls & Filter Layer Bar -->
+<div class="card mb-3">
+  <div class="card-body py-2 px-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <span class="fw-bold small text-dark"><i class="bi bi-layers-half text-primary me-1"></i> Geospatial Layers:</span>
+        <div class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="checkbox" id="layerRisk" checked>
+          <label class="form-check-label small" for="layerRisk">Heat-Risk Monitoring Stations</label>
+        </div>
+        <div class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="checkbox" id="layerHospitals" checked>
+          <label class="form-check-label small" for="layerHospitals"><span class="text-danger fw-semibold">✚</span> Emergency Hospitals</label>
+        </div>
+        <div class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="checkbox" id="layerCooling" checked>
+          <label class="form-check-label small" for="layerCooling"><span class="text-primary fw-semibold">❄</span> Public Cooling Shelters</label>
+        </div>
+        <div class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="checkbox" id="layerWater" checked>
+          <label class="form-check-label small" for="layerWater"><span class="text-info fw-semibold">💧</span> Water Tanker Points</label>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <select id="zoneSelector" class="form-select form-select-sm" style="width: auto;">
+          <option value="ALL">🇮🇳 Pan-India Overview</option>
+          <option value="EAST">⚡ East Zone (Odisha / WB / JH / BR)</option>
+          <option value="NORTH">🔥 North Zone (Delhi / UP / PB)</option>
+          <option value="NORTHWEST">☀️ Northwest & Arid (Rajasthan / Gujarat)</option>
+          <option value="WEST_CENTRAL">🏭 West & Central (Maharashtra / MP / CG)</option>
+          <option value="SOUTH">🌊 South Zone (Telangana / TN / Karnataka)</option>
+        </select>
+        <div class="btn-group btn-group-sm">
+          <button id="btnAllIndia" class="btn btn-primary py-1 px-2" title="Fit All-India View">
+            <i class="bi bi-globe-asia-australia me-1"></i> All India
+          </button>
+          <button id="btnResetView" class="btn btn-outline-secondary py-1 px-2" title="Zoom to Flagship Hub Rourkela">
+            <i class="bi bi-geo-alt-fill text-danger me-1"></i> Rourkela Hub
+          </button>
+        </div>
+        <div class="position-relative" style="min-width: 220px;">
+          <input type="text" id="mapCitySearch" class="form-control form-control-sm" placeholder="🔍 Search & add any city..." autocomplete="off">
+          <div id="mapSearchResults" class="list-group position-absolute top-100 start-0 w-100 shadow-lg d-none mt-1" style="z-index: 2200; max-height: 240px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map Container -->
+<div class="card mb-4 overflow-hidden shadow-sm">
+  <div class="card-body p-0 position-relative">
+    <div id="gis-map"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/map_gis.js') }}"></script>
+{% endblock %}

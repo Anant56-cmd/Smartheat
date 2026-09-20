@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}OpenAPI 3.0 & Swagger Developer Portal - SMARTHEAT{% endblock %}
+
+{% block extra_css %}
+<!-- Swagger UI CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui.css" />
+<style>
+  .swagger-ui .topbar { display: none; }
+  .swagger-ui { font-family: inherit; }
+  .swagger-ui .info .title { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="h4 fw-bold text-dark mb-1">
+        <i class="bi bi-code-slash text-primary me-2"></i>Interactive OpenAPI 3.0 / Swagger Developer Portal
+      </h2>
+      <p class="text-muted small mb-0">
+        Enterprise-grade REST API documentation. Test endpoints in real time directly from your browser.
+      </p>
+    </div>
+    <div>
+      <a href="/api/v1/openapi.json" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-filetype-json me-1"></i>Raw OpenAPI Spec
+      </a>
+      <a href="/api/v1/alerts/cap.xml" target="_blank" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-broadcast me-1"></i>OASIS CAP v1.2 XML Feed
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div id="swagger-ui"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+<script>
+  window.onload = function() {
+    SwaggerUIBundle({
+      url: "/api/v1/openapi.json",
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+      ],
+      layout: "BaseLayout"
+    });
+  };
+</script>
+{% endblock %}

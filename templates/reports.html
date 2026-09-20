@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports & Analytics Center{% endblock %}
+{% block page_title %}Reports, Audit Registry & Data Exports{% endblock %}
+
+{% block content %}
+<!-- Summary Counters -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center h-100">
+      <div class="text-muted small">Weather Records</div>
+      <div class="fs-3 fw-bold text-primary">{{ weather_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center h-100">
+      <div class="text-muted small">Predictions Logged</div>
+      <div class="fs-3 fw-bold text-success">{{ prediction_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center h-100">
+      <div class="text-muted small">Early Warning Alerts</div>
+      <div class="fs-3 fw-bold text-danger">{{ alert_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center h-100">
+      <div class="text-muted small">Vulnerability Zones</div>
+      <div class="fs-3 fw-bold text-warning">{{ vuln_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Downloadable Export Cards -->
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-file-earmark-spreadsheet text-success fs-5"></i>
+      <span class="fw-bold">Downloadable Data Exports (CSV)</span>
+    </div>
+    <button class="btn btn-sm btn-outline-dark" onclick="window.print()">
+      <i class="bi bi-printer me-1"></i> Print Executive Summary
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <!-- Weather Data CSV -->
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card border p-3 h-100 bg-light">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-cloud-sun text-primary fs-2"></i>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-dark mb-1">Weather Observations</h6>
+              <p class="text-muted small mb-3">All ingested historical observations, temperatures, humidity, and calculated Heat Index.</p>
+              <a href="{{ url_for('reports.export_csv', report_type='weather') }}" class="btn btn-sm btn-outline-primary w-100">
+                <i class="bi bi-download me-1"></i> Export Weather CSV
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ML Predictions CSV -->
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card border p-3 h-100 bg-light">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-cpu text-success fs-2"></i>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-dark mb-1">ML Inference Logs</h6>
+              <p class="text-muted small mb-3">Complete log of model predictions, classification outputs, confidence percentages, and timestamps.</p>
+              <a href="{{ url_for('reports.export_csv', report_type='predictions') }}" class="btn btn-sm btn-outline-success w-100">
+                <i class="bi bi-download me-1"></i> Export Predictions CSV
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts Log CSV -->
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card border p-3 h-100 bg-light">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-bell text-danger fs-2"></i>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-dark mb-1">Early Warning Alerts Registry</h6>
+              <p class="text-muted small mb-3">Historical record of triggered early warnings, meteorological causes, response actions, and resolution logs.</p>
+              <a href="{{ url_for('reports.export_csv', report_type='alerts') }}" class="btn btn-sm btn-outline-danger w-100">
+                <i class="bi bi-download me-1"></i> Export Alerts CSV
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vulnerability CSV -->
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card border p-3 h-100 bg-light">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-people text-warning fs-2"></i>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-dark mb-1">Ground Vulnerability Data</h6>
+              <p class="text-muted small mb-3">Demographic vulnerability factors: elderly, infants, outdoor laborers, slums, hospital beds, and water points.</p>
+              <a href="{{ url_for('reports.export_csv', report_type='vulnerability') }}" class="btn btn-sm btn-outline-warning text-dark w-100">
+                <i class="bi bi-download me-1"></i> Export Vulnerability CSV
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOPs CSV -->
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card border p-3 h-100 bg-light">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-journal-check text-info fs-2"></i>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-dark mb-1">Disaster Response Protocols</h6>
+              <p class="text-muted small mb-3">Catalog of standard operating procedures, action sectors (Health, Labor, Municipal, Public), and priority levels.</p>
+              <a href="{{ url_for('reports.export_csv', report_type='recommendations') }}" class="btn btn-sm btn-outline-info text-dark w-100">
+                <i class="bi bi-download me-1"></i> Export SOPs CSV
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

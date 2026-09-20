@@ -1,0 +1,299 @@
+:root {
+  --primary-color: #1e3a8a;
+  --primary-light: #3b82f6;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #2563eb;
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  
+  --risk-low: #10b981;
+  --risk-moderate: #f59e0b;
+  --risk-high: #ea580c;
+  --risk-extreme: #dc2626;
+}
+
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Sidebar Layout */
+#sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background-color: var(--sidebar-bg);
+  color: #e2e8f0;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+#sidebar .brand-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#sidebar .brand-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+#sidebar .brand-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: block;
+}
+
+#sidebar .nav-link {
+  color: #94a3b8;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0.2rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+#sidebar .nav-link:hover {
+  color: #ffffff;
+  background-color: var(--sidebar-hover);
+}
+
+#sidebar .nav-link.active {
+  color: #ffffff;
+  background-color: var(--sidebar-active);
+  font-weight: 600;
+}
+
+#sidebar .nav-link i {
+  font-size: 1.1rem;
+  width: 22px;
+  text-align: center;
+}
+
+/* Main Content Area */
+#content {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top Navbar */
+.top-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Custom Cards */
+.card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  background-color: var(--card-bg);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* KPI Metric Cards */
+.kpi-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-left: 4px solid var(--primary-light);
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07);
+}
+
+.kpi-card.kpi-danger { border-left-color: var(--risk-extreme); }
+.kpi-card.kpi-warning { border-left-color: var(--risk-moderate); }
+.kpi-card.kpi-high { border-left-color: var(--risk-high); }
+.kpi-card.kpi-success { border-left-color: var(--risk-low); }
+
+.kpi-title {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0.25rem 0;
+}
+
+.kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+}
+
+/* Badges for Risk Levels */
+.badge-risk-low {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.4rem;
+}
+
+.badge-risk-moderate {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.4rem;
+}
+
+.badge-risk-high {
+  background-color: rgba(234, 88, 12, 0.15);
+  color: #9a3412;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.4rem;
+}
+
+.badge-risk-extreme {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #991b1b;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.4rem;
+  animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+/* Alert Notification Banner */
+.alert-banner {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+}
+
+/* Leaflet Map Styles */
+#gis-map {
+  width: 100%;
+  height: 650px;
+  border-radius: 0.75rem;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.leaflet-popup-content {
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  padding: 4px;
+}
+
+.map-popup-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+  color: var(--primary-color);
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+.map-legend {
+  background: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  line-height: 1.6;
+  font-size: 0.82rem;
+}
+
+.legend-color {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Tables */
+.table th {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table td {
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* Form Styles */
+.form-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}IPCC Climate Crisis Stress-Testing Sandbox - SMARTHEAT{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-fire text-danger me-2"></i>IPCC Climate Crisis & Grid Stress-Testing Sandbox
+            </h2>
+            <p class="text-muted mb-0">
+                Stress-test national infrastructure resilience against compound shocks: IPCC global warming trajectories (+1°C to +4°C), urban power blackouts, and municipal water pipeline ruptures.
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-outline-danger me-2" onclick="runSimulation()">
+                <i class="bi bi-arrow-repeat me-1"></i>Run Stress Simulation
+            </button>
+            <a href="/map" class="btn btn-outline-secondary">
+                <i class="bi bi-geo-alt me-1"></i>View Pan-India GIS Map
+            </a>
+        </div>
+    </div>
+
+    <!-- Shock Controls -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-secondary"><i class="bi bi-sliders me-2"></i>Compound Climate Shock Parameters</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-thermometer-sun text-danger me-1"></i>Global Warming Anomaly Departure: 
+                        <span id="tempAnomalyVal" class="badge bg-danger fs-6">+2.0°C</span>
+                    </label>
+                    <input type="range" class="form-range" id="sliderTempAnomaly" min="0.5" max="4.0" step="0.5" value="2.0" oninput="updateSimControls()">
+                    <div class="form-text text-muted">
+                        Simulates IPCC SSP warming trajectories (<span id="pathwayBadge" class="fw-semibold text-dark">SSP2-4.5 Intermediate</span>).
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check form-switch p-3 border rounded bg-light">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="checkBlackout" onchange="runSimulation()">
+                        <label class="form-check-label fw-bold" for="checkBlackout">
+                            <i class="bi bi-lightning-charge text-warning me-1"></i>Power Grid Blackout
+                        </label>
+                        <div class="small text-muted mt-1">Simulates AC/fan loss (+35% vulnerability penalty).</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch p-3 border rounded bg-light">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="checkPipeline" onchange="runSimulation()">
+                        <label class="form-check-label fw-bold" for="checkPipeline">
+                            <i class="bi bi-droplet-half text-info me-1"></i>Municipal Pipeline Rupture
+                        </label>
+                        <div class="small text-muted mt-1">Halves public drinking water kiosk availability.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- National Impact KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                <div class="card-body">
+                    <div class="text-white-50 text-uppercase fw-bold small">Extreme Heat Epicenters</div>
+                    <div class="display-6 fw-bold mt-1" id="kpiExtremeStations">-- / 24</div>
+                    <div class="small mt-1"><i class="bi bi-graph-up-arrow me-1"></i><span id="kpiNewCritical">--</span> newly critical hubs</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">Projected ICU Bed Deficit</div>
+                    <div class="display-6 fw-bold text-danger mt-1" id="kpiBedDeficit">--</div>
+                    <div class="small text-muted mt-1"><i class="bi bi-hospital me-1"></i>Hospital triage overflow capacity</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">Vulnerable Citizens Exposed</div>
+                    <div class="display-6 fw-bold text-primary mt-1" id="kpiPopImpact">--</div>
+                    <div class="small text-muted mt-1"><i class="bi bi-people me-1"></i>Slum, infant & elderly population</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">IPCC Scenario Pathway</div>
+                    <div class="fs-5 fw-bold text-dark mt-2" id="kpiPathway">--</div>
+                    <div class="small text-muted mt-1"><i class="bi bi-shield-exclamation text-warning me-1"></i>Climate resilience index</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulated Hubs Stress Table -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-secondary"><i class="bi bi-table me-2"></i>Pan-India National Hubs Stress-Testing Results</h5>
+            <span class="badge bg-light text-dark border">Sorted by Simulated Heat Risk Score</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Station & State</th>
+                            <th>Zone Type</th>
+                            <th>Baseline Temp</th>
+                            <th>Simulated Temp</th>
+                            <th>Simulated Heat Index</th>
+                            <th>Risk Score Shift</th>
+                            <th>Projected Daily ER Patients</th>
+                            <th>Hospital Bed Deficit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simTableRows">
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <div class="spinner-border spinner-border-sm text-danger me-2"></div>
+                                Running national climate stress simulation...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateSimControls() {
+    const val = document.getElementById('sliderTempAnomaly').value;
+    document.getElementById('tempAnomalyVal').innerText = `+${val}°C`;
+    
+    let path = 'SSP1-2.6 (Paris Goal)';
+    if (parseFloat(val) >= 3.0) path = 'SSP5-8.5 (Extreme Warming)';
+    else if (parseFloat(val) >= 1.5) path = 'SSP2-4.5 (Intermediate)';
+    document.getElementById('pathwayBadge').innerText = path;
+    
+    runSimulation();
+}
+
+function runSimulation() {
+    const anomaly = parseFloat(document.getElementById('sliderTempAnomaly').value);
+    const blackout = document.getElementById('checkBlackout').checked;
+    const pipeline = document.getElementById('checkPipeline').checked;
+
+    fetch('/api/v1/simulate/climate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            temp_anomaly: anomaly,
+            grid_blackout: blackout,
+            water_pipeline_rupture: pipeline
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Update KPIs
+        document.getElementById('kpiExtremeStations').innerText = `${data.systemic_impact.simulated_extreme_stations} / ${data.systemic_impact.total_stations}`;
+        document.getElementById('kpiNewCritical').innerText = `+${data.systemic_impact.newly_critical_stations}`;
+        document.getElementById('kpiBedDeficit').innerText = data.systemic_impact.total_projected_bed_deficit.toLocaleString();
+        document.getElementById('kpiPopImpact').innerText = (data.systemic_impact.total_vulnerable_population_impacted / 1000000).toFixed(1) + ' Million';
+        document.getElementById('kpiPathway').innerText = data.scenario.ipcc_pathway_reference;
+
+        // Render Table
+        const tbody = document.getElementById('simTableRows');
+        tbody.innerHTML = '';
+        data.stations.forEach((s, idx) => {
+            let statusBadge = s.hospital_bed_deficit > 0 
+                ? '<span class="badge bg-danger">BED OVERFLOW DEFICIT</span>' 
+                : '<span class="badge bg-success">CAPACITY SAFE</span>';
+
+            let tierClass = 'bg-secondary';
+            if (s.simulated_tier === 'EXTREME') tierClass = 'bg-danger';
+            else if (s.simulated_tier === 'HIGH') tierClass = 'bg-warning text-dark';
+            else if (s.simulated_tier === 'MODERATE') tierClass = 'bg-info text-dark';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="badge bg-secondary rounded-pill">#${idx + 1}</span></td>
+                <td>
+                    <div class="fw-bold">${s.name}</div>
+                    <div class="small text-muted">${s.state}</div>
+                </td>
+                <td><span class="small text-muted">${s.zone_type}</span></td>
+                <td>${s.baseline_temperature}°C</td>
+                <td><strong class="text-danger">${s.simulated_temperature}°C</strong></td>
+                <td><strong class="text-danger">${s.simulated_heat_index}°C</strong></td>
+                <td>
+                    <span class="badge ${tierClass}">${s.simulated_tier}</span>
+                    <span class="small fw-semibold text-danger ms-1">(+${s.risk_delta})</span>
+                </td>
+                <td class="fw-bold">${s.projected_daily_patients}</td>
+                <td>
+                    <span class="fw-bold ${s.hospital_bed_deficit > 0 ? 'text-danger' : 'text-success'}">
+                        ${s.hospital_bed_deficit > 0 ? `-${s.hospital_bed_deficit} beds` : 'None'}
+                    </span>
+                </td>
+                <td>${statusBadge}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    })
+    .catch(err => {
+        console.error('Simulation Error:', err);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    runSimulation();
+});
+</script>
+{% endblock %}

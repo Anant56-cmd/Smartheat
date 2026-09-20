@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  smartheat-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartheat_disaster_platform
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=enterprise-disaster-resilience-token-2026
+      - DATABASE_URL=sqlite:///database/smartheat.db
+    volumes:
+      - ./data:/app/data
+      - ./saved_models:/app/saved_models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

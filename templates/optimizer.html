@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}Emergency Logistics & Resource Optimizer - SMARTHEAT{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="h3 fw-bold text-dark mb-1">
+                <i class="fas fa-truck-moving text-primary me-2"></i>Municipal Resource Allocation Optimizer
+            </h2>
+            <p class="text-muted mb-0">
+                Algorithmic decision support using priority-queue marginal utility optimization ($O(N \log N)$) for water tankers and medical surge capacity.
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary me-2" onclick="recalculateOptimizer()">
+                <i class="fas fa-sync-alt me-1"></i>Re-solve Allocation
+            </button>
+            <a href="/api/v1/health" target="_blank" class="btn btn-outline-secondary">
+                <i class="fas fa-heartbeat text-danger me-1"></i>SRE Health Probe
+            </a>
+        </div>
+    </div>
+
+    <!-- Optimization Parameter Controls -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-bold text-secondary">
+                <i class="fas fa-sliders-h me-2"></i>Supply Constraint Inputs
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-water text-info me-1"></i>Available Water Tankers Fleet: 
+                        <span id="tanker-val" class="badge bg-primary fs-6">30</span>
+                    </label>
+                    <input type="range" class="form-range" id="input-tankers" min="5" max="60" value="30" oninput="updateValues()">
+                    <div class="form-text text-muted">Total municipal water supply vehicles ready for emergency deployment.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-first-aid text-danger me-1"></i>Emergency ORS Sachets (Packets): 
+                        <span id="ors-val" class="badge bg-success fs-6">5000</span>
+                    </label>
+                    <input type="range" class="form-range" id="input-ors" min="500" max="15000" step="500" value="5000" oninput="updateValues()">
+                    <div class="form-text text-muted">Oral Rehydration Salts buffer for vulnerable demographic clusters.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-procedures text-warning me-1"></i>Surge ICU / Heat-Stroke Beds: 
+                        <span id="beds-val" class="badge bg-warning text-dark fs-6">120</span>
+                    </label>
+                    <input type="range" class="form-range" id="input-beds" min="20" max="300" step="10" value="120" oninput="updateValues()">
+                    <div class="form-text text-muted">Designated cold-ward inpatient capacity reserved across facilities.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="row g-3 mb-4" id="kpi-summary">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-gradient text-white" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                <div class="card-body">
+                    <div class="text-white-50 text-uppercase fw-bold small">Systemic Risk Mitigation</div>
+                    <div class="display-6 fw-bold mt-1" id="kpi-mitigation">--%</div>
+                    <div class="small mt-1"><i class="fas fa-shield-alt me-1"></i>Estimated population protection</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">Water Tankers Dispatched</div>
+                    <div class="display-6 fw-bold text-primary mt-1" id="kpi-tankers">-- / --</div>
+                    <div class="small text-muted mt-1"><i class="fas fa-gas-pump me-1"></i>Fleet utilization: <span id="kpi-fleet-util">--%</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">ORS Packets Allocated</div>
+                    <div class="display-6 fw-bold text-success mt-1" id="kpi-ors">--</div>
+                    <div class="small text-muted mt-1"><i class="fas fa-capsules me-1"></i>Supplies routed to slums & kiosks</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase fw-bold small">Cold Beds Reserved</div>
+                    <div class="display-6 fw-bold text-warning mt-1" id="kpi-beds">--</div>
+                    <div class="small text-muted mt-1"><i class="fas fa-hospital me-1"></i>Critical triage capacity</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Capacitated Vehicle Routing Problem (CVRP) Dispatch Schedule -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="fas fa-route text-primary me-2"></i>CVRP Algorithmic Fleet Routing & Driver Schedules
+                </h5>
+                <p class="text-muted small mb-0">Nearest-Neighbor 2-Opt Heuristic solving vehicle route sequencing and delivery ETAs.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadVrpRoutes()">
+                <i class="fas fa-sync-alt me-1"></i>Compute VRP Routes
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-3" id="vrpKpis">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light text-center">
+                        <div class="small text-muted text-uppercase fw-bold">Total Transit Distance</div>
+                        <div class="h4 fw-bold text-primary mb-0" id="vrpDist">-- km</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light text-center">
+                        <div class="small text-muted text-uppercase fw-bold">Total Water Delivered</div>
+                        <div class="h4 fw-bold text-success mb-0" id="vrpWater">-- L</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light text-center">
+                        <div class="small text-muted text-uppercase fw-bold">Estimated Diesel Saved</div>
+                        <div class="h4 fw-bold text-warning mb-0" id="vrpFuel">-- Litres</div>
+                    </div>
+                </div>
+            </div>
+            <div id="vrpRoutesContainer" class="row g-3">
+                <div class="col-12 text-center text-muted py-3">Click "Compute VRP Routes" to generate vehicle itineraries.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optimal Allocation Table -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-secondary">
+                <i class="fas fa-table me-2"></i>Optimized Municipal Ward Dispatch Schedule
+            </h5>
+            <span class="badge bg-light text-dark border">
+                <i class="fas fa-brain text-primary me-1"></i>Priority Formula: $(Risk^{1.6} \times Pop_{vuln}) / \sqrt{1 + Dist}$
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="allocation-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Priority Rank</th>
+                            <th>Municipal Ward / Sector</th>
+                            <th>Heat Risk Score</th>
+                            <th>Vulnerable Headcount</th>
+                            <th>Depot Dist.</th>
+                            <th>Tankers Dispatched</th>
+                            <th>ORS Distributed</th>
+                            <th>Surge Beds</th>
+                            <th>Unmet Demand</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allocation-rows">
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                Running priority allocation solver...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateValues() {
+    document.getElementById('tanker-val').innerText = document.getElementById('input-tankers').value;
+    document.getElementById('ors-val').innerText = document.getElementById('input-ors').value;
+    document.getElementById('beds-val').innerText = document.getElementById('input-beds').value;
+    recalculateOptimizer();
+}
+
+function recalculateOptimizer() {
+    const tankers = parseInt(document.getElementById('input-tankers').value);
+    const ors = parseInt(document.getElementById('input-ors').value);
+    const beds = parseInt(document.getElementById('input-beds').value);
+
+    fetch('/api/v1/optimize/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            fleet_water_tankers: tankers,
+            total_ors_kits: ors,
+            emergency_beds: beds
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Update KPIs
+        document.getElementById('kpi-mitigation').innerText = data.system_risk_mitigation_pct + '%';
+        document.getElementById('kpi-tankers').innerText = `${data.total_tankers_dispatched} / ${data.fleet_capacity}`;
+        const util = Math.round((data.total_tankers_dispatched / data.fleet_capacity) * 100);
+        document.getElementById('kpi-fleet-util').innerText = util + '%';
+        document.getElementById('kpi-ors').innerText = data.total_ors_distributed.toLocaleString();
+        document.getElementById('kpi-beds').innerText = data.total_beds_reserved;
+
+        // Render Table
+        const tbody = document.getElementById('allocation-rows');
+        tbody.innerHTML = '';
+        data.wards_allocation.forEach((w, idx) => {
+            let badgeColor = 'bg-success';
+            if (w.risk_level === 'EXTREME') badgeColor = 'bg-danger';
+            else if (w.risk_level === 'HIGH') badgeColor = 'bg-warning text-dark';
+            else if (w.risk_level === 'MODERATE') badgeColor = 'bg-info text-dark';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="badge bg-secondary rounded-pill">#${idx + 1}</span></td>
+                <td class="fw-bold">${w.ward_name}</td>
+                <td>
+                    <span class="badge ${badgeColor}">${w.risk_level}</span>
+                    <span class="ms-1 small text-muted">(${w.risk_score})</span>
+                </td>
+                <td>${w.vulnerable_population.toLocaleString()}</td>
+                <td>${w.depot_distance_km} km</td>
+                <td>
+                    <span class="badge bg-primary fs-6 px-3">${w.allocated_tankers}</span>
+                    <span class="small text-muted ms-1">/ ${w.max_tankers_needed} needed</span>
+                </td>
+                <td><span class="fw-semibold text-success">${w.allocated_ors.toLocaleString()}</span></td>
+                <td><span class="fw-semibold text-warning">${w.allocated_beds}</span></td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                            <div class="progress-bar ${w.unmet_demand_pct > 0 ? 'bg-danger' : 'bg-success'}" style="width: ${w.unmet_demand_pct}%;"></div>
+                        </div>
+                        <span class="small fw-semibold">${w.unmet_demand_pct}%</span>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    })
+    .catch(err => {
+        console.error('Optimizer Error:', err);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    recalculateOptimizer();
+});
+
+function loadVrpRoutes() {
+    const tankers = parseInt(document.getElementById('input-tankers').value);
+    const container = document.getElementById('vrpRoutesContainer');
+    container.innerHTML = '<div class="col-12 text-center py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Solving Capacitated Vehicle Routing Problem...</div>';
+
+    fetch('/api/v1/optimize/vrp-routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fleet_water_tankers: tankers })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('vrpDist').innerText = data.total_transit_distance_km + ' km';
+        document.getElementById('vrpWater').innerText = data.total_water_dispatched_liters.toLocaleString() + ' L';
+        document.getElementById('vrpFuel').innerText = data.total_fuel_saved_liters + ' L';
+
+        container.innerHTML = '';
+        data.routes.slice(0, 6).forEach(r => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4';
+            let itinHtml = r.itinerary.map(i => `
+                <li class="d-flex justify-content-between small py-1 border-bottom">
+                    <span><strong>${i.eta}</strong> - ${i.destination}</span>
+                    <span class="text-success fw-semibold">${i.volume_dispensed}</span>
+                </li>
+            `).join('');
+
+            col.innerHTML = `
+                <div class="card h-100 border shadow-none bg-light">
+                    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                        <strong class="text-primary"><i class="fas fa-truck me-1"></i>${r.tanker_id}</strong>
+                        <span class="badge bg-secondary">${r.total_distance_km} km</span>
+                    </div>
+                    <div class="card-body p-2">
+                        <ul class="list-unstyled mb-0">${itinHtml}</ul>
+                    </div>
+                    <div class="card-footer bg-white py-1 small text-muted text-end">
+                        <i class="fas fa-leaf text-success me-1"></i>Fuel saved: ${r.fuel_saved_liters} L
+                    </div>
+                </div>
+            `;
+            container.appendChild(col);
+        });
+    })
+    .catch(err => console.error('VRP Error:', err));
+}
+
+</script>
+{% endblock %}

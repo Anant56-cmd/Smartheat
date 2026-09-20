@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: smartheat-disaster-platform
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0: --workers 2 run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.0

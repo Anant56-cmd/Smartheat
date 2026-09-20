@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Weather Data Management{% endblock %}
+{% block page_title %}Weather Data Management & Ingestion{% endblock %}
+
+{% block content %}
+<!-- Live Sync & Ingestion Grid -->
+<div class="row g-3 mb-4">
+  <!-- Live Open-Meteo Sync Card -->
+  <div class="col-12 col-md-4">
+    <div class="card h-100 border-primary border-opacity-25 bg-light">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-primary"><i class="bi bi-broadcast me-1"></i> Live Real-Time Feed</span>
+        <span class="badge bg-primary">WMO API</span>
+      </div>
+      <div class="card-body d-flex flex-column justify-content-between">
+        <p class="text-muted small mb-3">
+          Direct live stream from Open-Meteo API. Fetches real-time temperature, humidity, wind, and barometric pressure for all monitored Indian cities.
+        </p>
+        <a href="{{ url_for('weather.sync_realtime_action') }}" class="btn btn-primary w-100">
+          <i class="bi bi-arrow-repeat me-1"></i> Sync All Stations Now
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload CSV Card -->
+  <div class="col-12 col-md-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <span class="fw-bold"><i class="bi bi-file-earmark-arrow-up text-secondary me-2"></i> Ingest Historical CSV</span>
+        <span class="badge bg-light text-secondary border">Batch Upload</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('weather.upload_csv') }}" enctype="multipart/form-data">
+          <div class="mb-2">
+            <input type="file" name="file" class="form-control form-control-sm" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-outline-dark btn-sm w-100">
+            <i class="bi bi-cloud-upload me-1"></i> Upload & Validate CSV
+          </button>
+          <div class="text-muted small mt-2" style="font-size: 0.76rem;">
+            <i class="bi bi-info-circle me-1"></i> Required: <code>Temperature</code>, <code>Humidity</code>.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Entry Card Trigger -->
+  <div class="col-12 col-md-3">
+    <div class="card h-100 bg-white border">
+      <div class="card-header bg-transparent">
+        <span class="fw-bold"><i class="bi bi-pencil-square text-success me-2"></i> Manual Input</span>
+      </div>
+      <div class="card-body d-flex flex-column justify-content-between">
+        <p class="text-muted small mb-2">Record an isolated field reading manually.</p>
+        <button type="button" class="btn btn-outline-secondary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#manualEntryModal">
+          <i class="bi bi-plus-circle me-1"></i> Add Entry
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Weather Observations Table -->
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-table text-primary"></i>
+      <span class="fw-bold">Ingested Meteorological Records</span>
+      <span class="badge bg-secondary-subtle text-secondary">{{ pagination.total }} Total Records</span>
+    </div>
+
+    <!-- Filter by Location -->
+    <form method="GET" action="{{ url_for('weather.index') }}" class="d-flex align-items-center gap-2">
+      <select name="location_id" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Locations ({{ locations|length }})</option>
+        {% for loc in locations %}
+          <option value="{{ loc.id }}" {% if selected_location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+        {% endfor %}
+      </select>
+      {% if selected_location_id %}
+        <a href="{{ url_for('weather.index') }}" class="btn btn-sm btn-outline-secondary" title="Clear Filter">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Location</th>
+            <th>Date</th>
+            <th>Temperature</th>
+            <th>Humidity</th>
+            <th>NOAA Heat Index</th>
+            <th>Wind Speed</th>
+            <th>Rainfall</th>
+            <th>Pressure</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td><code>#{{ r.id }}</code></td>
+            <td class="fw-semibold">{{ r.location.name if r.location else 'Unknown' }}</td>
+            <td class="text-muted">{{ r.date.strftime('%d %b %Y') }}</td>
+            <td>
+              <span class="fw-bold {% if r.temperature >= 42 %}text-danger{% elif r.temperature >= 38 %}text-warning{% endif %}">
+                {{ r.temperature }}°C
+              </span>
+            </td>
+            <td>{{ r.humidity }}%</td>
+            <td>
+              <span class="fw-semibold {% if r.heat_index and r.heat_index >= 50 %}text-danger{% elif r.heat_index and r.heat_index >= 40 %}text-warning{% endif %}">
+                {{ r.heat_index if r.heat_index else '-' }}°C
+              </span>
+            </td>
+            <td>{{ r.wind_speed }} km/h</td>
+            <td>{{ r.rainfall }} mm</td>
+            <td>{{ r.pressure }} hPa</td>
+            <td>
+              {% if r.is_simulated %}
+                <span class="badge bg-light text-secondary border">Simulated</span>
+              {% else %}
+                <span class="badge bg-success-subtle text-success">Ingested</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="10" class="text-center py-4 text-muted">No weather records found. Upload a CSV file above.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center p-3 border-top">
+      <div class="text-muted small">
+        Showing page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages }}</strong>
+      </div>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('weather.index', page=pagination.prev_num, location_id=selected_location_id) }}">Previous</a>
+        </li>
+        <li class="page-item active"><span class="page-link">{{ pagination.page }}</span></li>
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('weather.index', page=pagination.next_num, location_id=selected_location_id) }}">Next</a>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Manual Entry Modal -->
+<div class="modal fade" id="manualEntryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Record Single Weather Observation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('weather.manual_entry') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Location / Monitoring Station</label>
+            <select name="location_id" class="form-select" required>
+              {% for loc in locations %}
+                <option value="{{ loc.id }}">{{ loc.name }} ({{ loc.state }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Observation Date</label>
+              <input type="date" name="date" class="form-control" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Temperature (°C)</label>
+              <input type="number" step="0.1" min="-10" max="60" name="temperature" class="form-control" placeholder="e.g. 42.5" required>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Relative Humidity (%)</label>
+              <input type="number" step="0.1" min="0" max="100" name="humidity" class="form-control" placeholder="e.g. 45" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Wind Speed (km/h)</label>
+              <input type="number" step="0.1" name="wind_speed" class="form-control" value="10.0">
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Rainfall (mm)</label>
+              <input type="number" step="0.1" name="rainfall" class="form-control" value="0.0">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Pressure (hPa)</label>
+              <input type="number" step="0.1" name="pressure" class="form-control" value="1013.25">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Observation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

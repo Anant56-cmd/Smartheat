@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Disaster Response SOPs{% endblock %}
+{% block page_title %}Disaster Response Standard Operating Procedures (SOPs){% endblock %}
+
+{% block content %}
+<!-- Explanatory Header -->
+<div class="card mb-4 bg-light border">
+  <div class="card-body py-3 px-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h5 class="fw-bold text-dark mb-1"><i class="bi bi-journal-check text-primary me-2"></i> National Heat Wave Action Plan Guidelines</h5>
+        <p class="text-muted small mb-0">
+          Rule-based, explainable standard operating procedures aligned with NDMA (National Disaster Management Authority) and IMD framework for phased heat-wave containment across civic, occupational, and public health sectors.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('reports.export_csv', report_type='recommendations') }}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-download me-1"></i> Export SOPs (CSV)
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-4">
+  <div class="card-body py-2 px-3">
+    <form method="GET" action="{{ url_for('recommendations.index') }}" class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="small fw-semibold text-secondary">Filter by Sector:</span>
+        <select name="sector" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if selected_sector == 'all' %}selected{% endif %}>All Sectors</option>
+          <option value="public" {% if selected_sector == 'public' %}selected{% endif %}>General Public</option>
+          <option value="labor" {% if selected_sector == 'labor' %}selected{% endif %}>Labor & Industry</option>
+          <option value="health" {% if selected_sector == 'health' %}selected{% endif %}>Health & Hospitals</option>
+          <option value="municipal" {% if selected_sector == 'municipal' %}selected{% endif %}>Civic Municipalities</option>
+        </select>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <span class="small fw-semibold text-secondary">Risk Tier:</span>
+        <select name="level" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if selected_level == 'all' %}selected{% endif %}>All Risk Levels</option>
+          <option value="low" {% if selected_level == 'low' %}selected{% endif %}>LOW</option>
+          <option value="moderate" {% if selected_level == 'moderate' %}selected{% endif %}>MODERATE</option>
+          <option value="high" {% if selected_level == 'high' %}selected{% endif %}>HIGH</option>
+          <option value="extreme" {% if selected_level == 'extreme' %}selected{% endif %}>EXTREME</option>
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Accordion / Grouped SOP Cards -->
+<div class="row g-4">
+  <!-- EXTREME -->
+  {% if grouped_sops['EXTREME'] %}
+  <div class="col-12">
+    <div class="card border-danger mb-0">
+      <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Tier 4: EXTREME HEAT EMERGENCY (Red Alert)</span>
+        <span class="badge bg-white text-danger">Score: 76–100 / Temp ≥ 45°C</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for sop in grouped_sops['EXTREME'] %}
+          <div class="list-group-item p-3">
+            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+              <h6 class="mb-0 fw-bold text-dark">{{ sop.title }}</h6>
+              <div>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1">{{ sop.priority }}</span>
+                <span class="badge bg-light text-secondary border">{{ sop.target_sector }}</span>
+              </div>
+            </div>
+            <p class="text-secondary small mb-0">{{ sop.description }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- HIGH -->
+  {% if grouped_sops['HIGH'] %}
+  <div class="col-12">
+    <div class="card border-warning mb-0">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Tier 3: HIGH HEAT ADVISORY (Orange Warning)</span>
+        <span class="badge bg-dark text-white">Score: 51–75 / Heat Index 41–54°C</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for sop in grouped_sops['HIGH'] %}
+          <div class="list-group-item p-3">
+            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+              <h6 class="mb-0 fw-bold text-dark">{{ sop.title }}</h6>
+              <div>
+                <span class="badge bg-warning-subtle text-dark border border-warning-subtle me-1">{{ sop.priority }}</span>
+                <span class="badge bg-light text-secondary border">{{ sop.target_sector }}</span>
+              </div>
+            </div>
+            <p class="text-secondary small mb-0">{{ sop.description }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- MODERATE -->
+  {% if grouped_sops['MODERATE'] %}
+  <div class="col-12">
+    <div class="card border-info mb-0">
+      <div class="card-header bg-info-subtle text-primary-emphasis d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="bi bi-info-circle-fill me-2 text-warning"></i> Tier 2: MODERATE HEAT CAUTION (Yellow Advisory)</span>
+        <span class="badge bg-secondary-subtle text-secondary">Score: 26–50 / Heat Index 32–41°C</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for sop in grouped_sops['MODERATE'] %}
+          <div class="list-group-item p-3">
+            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+              <h6 class="mb-0 fw-bold text-dark">{{ sop.title }}</h6>
+              <div>
+                <span class="badge bg-secondary-subtle text-secondary me-1">{{ sop.priority }}</span>
+                <span class="badge bg-light text-secondary border">{{ sop.target_sector }}</span>
+              </div>
+            </div>
+            <p class="text-secondary small mb-0">{{ sop.description }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- LOW -->
+  {% if grouped_sops['LOW'] %}
+  <div class="col-12">
+    <div class="card border-success mb-0">
+      <div class="card-header bg-success-subtle text-success-emphasis d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="bi bi-shield-check me-2 text-success"></i> Tier 1: LOW RISK / ROUTINE SURVEILLANCE</span>
+        <span class="badge bg-success-subtle text-success">Score: 0–25 / Normal Conditions</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for sop in grouped_sops['LOW'] %}
+          <div class="list-group-item p-3">
+            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+              <h6 class="mb-0 fw-bold text-dark">{{ sop.title }}</h6>
+              <div>
+                <span class="badge bg-light text-secondary me-1">{{ sop.priority }}</span>
+                <span class="badge bg-light text-secondary border">{{ sop.target_sector }}</span>
+              </div>
+            </div>
+            <p class="text-secondary small mb-0">{{ sop.description }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

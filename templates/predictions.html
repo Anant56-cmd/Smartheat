@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Heat Wave Prediction{% endblock %}
+{% block page_title %}AI Heat Wave Prediction & Risk Assessment Engine{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <!-- Left Column: Interactive Inference Form -->
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <span class="fw-bold"><i class="bi bi-cpu text-primary me-2"></i> Live Model Inference Simulator</span>
+        <span class="badge bg-primary-subtle text-primary">Random Forest</span>
+      </div>
+      <div class="card-body">
+        <form id="predictionForm">
+          <div class="mb-3">
+            <label class="form-label">Target Location / Monitoring Zone</label>
+            <select name="location_id" id="predLocation" class="form-select" required>
+              {% for loc in locations %}
+                <option value="{{ loc.id }}">{{ loc.name }} (Baseline: {{ loc.baseline_temp }}°C)</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <button type="button" id="btnLoadLiveWeather" class="btn btn-sm btn-outline-primary w-100 py-1 d-flex align-items-center justify-content-center gap-1">
+              <i class="bi bi-broadcast"></i> Fetch Real-Time Weather for Station
+            </button>
+            <div id="liveSourceBadge" class="small text-success text-center mt-1 d-none">
+              <i class="bi bi-check2-circle"></i> Populated with live observation from Open-Meteo
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <label class="form-label">Air Temperature (°C)</label>
+              <span id="tempDisplay" class="fw-bold text-danger">42.0°C</span>
+            </div>
+            <input type="range" class="form-range" id="tempRange" min="20" max="52" step="0.5" value="42.0">
+            <input type="number" step="0.1" name="temperature" id="tempInput" class="form-control form-control-sm mt-1" value="42.0" required>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <label class="form-label">Relative Humidity (%)</label>
+              <span id="humidityDisplay" class="fw-bold text-primary">45%</span>
+            </div>
+            <input type="range" class="form-range" id="humidityRange" min="10" max="95" step="1" value="45">
+            <input type="number" step="1" name="humidity" id="humidityInput" class="form-control form-control-sm mt-1" value="45" required>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label small">Wind (km/h)</label>
+              <input type="number" step="0.1" name="wind_speed" id="windInput" class="form-control form-control-sm" value="12.0">
+            </div>
+            <div class="col-4">
+              <label class="form-label small">Rain (mm)</label>
+              <input type="number" step="0.1" name="rainfall" id="rainInput" class="form-control form-control-sm" value="0.0">
+            </div>
+            <div class="col-4">
+              <label class="form-label small">Pressure (hPa)</label>
+              <input type="number" step="0.1" name="pressure" id="pressureInput" class="form-control form-control-sm" value="1008.0">
+            </div>
+          </div>
+
+          <button type="submit" id="predictBtn" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Run Prediction & Risk Score
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Live Output & Transparent Risk Breakdown -->
+  <div class="col-12 col-lg-7">
+    <div class="card h-100" id="resultCardContainer">
+      <div class="card-header">
+        <span class="fw-bold"><i class="bi bi-speedometer2 text-danger me-2"></i> Inference & Transparent Risk Breakdown</span>
+        <span id="alertTriggerBadge" class="badge bg-danger d-none"><i class="bi bi-bell-fill"></i> Early Warning Triggered</span>
+      </div>
+      <div class="card-body">
+        <!-- Initial Placeholder State -->
+        <div id="resultPlaceholder" class="text-center py-5 text-muted">
+          <i class="bi bi-sliders fs-1 text-secondary d-block mb-3"></i>
+          <h5>Awaiting Observation Input</h5>
+          <p class="small">Adjust parameters on the left and click "Run Prediction" to see real-time AI classification, NOAA Heat Index, and composite risk scoring breakdown.</p>
+        </div>
+
+        <!-- Dynamic Output Container (Filled by AJAX) -->
+        <div id="resultContent" class="d-none">
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <div class="p-3 bg-light rounded text-center border">
+                <div class="text-muted small text-uppercase fw-semibold">Predicted Heat Wave Risk</div>
+                <div id="resRiskBadge" class="fs-3 fw-bold my-1">HIGH</div>
+                <div class="small text-muted">Model Confidence: <strong id="resConfidence" class="text-dark">94.5%</strong></div>
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <div class="p-3 bg-light rounded text-center border">
+                <div class="text-muted small text-uppercase fw-semibold">Composite Risk Score (0-100)</div>
+                <div id="resTotalScore" class="fs-3 fw-bold text-danger my-1">68.4 / 100</div>
+                <div class="small text-muted">NOAA Heat Index: <strong id="resHeatIndex" class="text-dark">48.2°C</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Component Breakdown Progress Bars -->
+          <div class="mb-3 p-3 border rounded bg-white">
+            <div class="fw-semibold small text-secondary mb-2">Transparent Multi-Factor Contribution:</div>
+            
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small">
+                <span>1. Meteorological Hazard (45%)</span>
+                <span id="resHazardVal" class="fw-bold">75.0 / 100</span>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div id="resHazardBar" class="progress-bar bg-danger" style="width: 75%;"></div>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small">
+                <span>2. Socio-Demographic Vulnerability (30%)</span>
+                <span id="resVulnVal" class="fw-bold">64.0 / 100</span>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div id="resVulnBar" class="progress-bar bg-warning" style="width: 64%;"></div>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small">
+                <span>3. Population & Spatial Exposure (15%)</span>
+                <span id="resExpoVal" class="fw-bold">85.0 / 100</span>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div id="resExpoBar" class="progress-bar bg-info" style="width: 85%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="d-flex justify-content-between small">
+                <span>4. Healthcare & Water Deficit (10%)</span>
+                <span id="resDeficitVal" class="fw-bold">40.0 / 100</span>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div id="resDeficitBar" class="progress-bar bg-secondary" style="width: 40%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explainable AI (XAI) Local Feature Attribution -->
+          <div id="xaiContainer" class="border rounded p-3 bg-white mb-3 d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold small text-dark"><i class="bi bi-cpu text-primary me-1"></i> Explainable AI (XAI): Feature Attribution</span>
+              <span class="badge bg-light text-secondary border small">Tree Contrastive Attribution</span>
+            </div>
+            <p class="small text-muted mb-2">Quantifies each factor's percentage impact driving the model toward this risk tier relative to comfortable conditions.</p>
+            <div id="xaiAttributionList" class="mb-2"></div>
+            <div id="xaiCounterfactual" class="p-2 bg-light rounded small text-dark border d-none"></div>
+          </div>
+
+          <!-- Actionable SOPs Checklist -->
+          <div class="border rounded p-3 bg-light">
+            <div class="fw-semibold small text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i> Recommended Disaster Response Protocols:</div>
+            <ul id="resRecList" class="small text-muted mb-0 ps-3">
+              <!-- Filled dynamically -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ML Evaluation & Comparative Metrics Section -->
+{% if ml_metrics %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-award text-success fs-5"></i>
+      <span class="fw-bold">Model Evaluation & Comparative Performance (Real Metrics)</span>
+    </div>
+    <form method="POST" action="{{ url_for('ml.retrain') }}" onsubmit="return confirm('Retrain Random Forest and Decision Tree models on the current dataset?')">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-arrow-repeat me-1"></i> Retrain Pipeline
+      </button>
+    </form>
+  </div>
+  <div class="card-body">
+    <div class="row g-4 mb-3">
+      <!-- Comparative Performance Cards -->
+      <div class="col-12 col-md-6">
+        <div class="p-3 border rounded border-primary border-opacity-50 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-primary mb-0">Primary: {{ ml_metrics.primary_model.name }}</h6>
+            <span class="badge bg-primary">Selected for Production</span>
+          </div>
+          <div class="row g-2 text-center mt-2">
+            <div class="col-3">
+              <div class="small text-muted">Accuracy</div>
+              <div class="fw-bold text-success fs-5">{{ ml_metrics.primary_model.accuracy }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Precision</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.primary_model.precision_weighted }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Recall</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.primary_model.recall_weighted }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">F1-Score</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.primary_model.f1_weighted }}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="p-3 border rounded bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-secondary mb-0">Comparative: {{ ml_metrics.comparative_model.name }}</h6>
+            <span class="badge bg-secondary">Benchmark</span>
+          </div>
+          <div class="row g-2 text-center mt-2">
+            <div class="col-3">
+              <div class="small text-muted">Accuracy</div>
+              <div class="fw-bold text-primary fs-5">{{ ml_metrics.comparative_model.accuracy }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Precision</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.comparative_model.precision_weighted }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Recall</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.comparative_model.recall_weighted }}%</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">F1-Score</div>
+              <div class="fw-bold text-dark fs-5">{{ ml_metrics.comparative_model.f1_weighted }}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4x4 Confusion Matrix -->
+    <div class="row g-4">
+      <div class="col-12 col-md-6">
+        <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-grid-3x3 me-1"></i> Multi-Class Confusion Matrix (Test Set: {{ ml_metrics.test_samples }} samples)</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered text-center align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th rowspan="2" class="align-middle">Actual Label</th>
+                <th colspan="4">Predicted Label</th>
+              </tr>
+              <tr>
+                <th>LOW</th>
+                <th>MODERATE</th>
+                <th>HIGH</th>
+                <th>EXTREME</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row_idx in range(4) %}
+              <tr>
+                <th class="table-light">{{ ml_metrics.classes[row_idx] }}</th>
+                {% for col_idx in range(4) %}
+                <td class="{% if row_idx == col_idx and ml_metrics.primary_model.confusion_matrix[row_idx][col_idx] > 0 %}bg-success-subtle fw-bold text-success{% endif %}">
+                  {{ ml_metrics.primary_model.confusion_matrix[row_idx][col_idx] }}
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-list-check me-1"></i> Per-Class Precision & Recall Performance</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle small mb-0">
+            <thead>
+              <tr>
+                <th>Class Label</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+                <th>Test Support</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cls_name in ml_metrics.classes %}
+              {% set pdata = ml_metrics.primary_model.per_class[cls_name] %}
+              <tr>
+                <td class="fw-semibold">
+                  <span class="badge-risk-{{ cls_name.lower() }}">{{ cls_name }}</span>
+                </td>
+                <td>{{ pdata.precision }}%</td>
+                <td>{{ pdata.recall }}%</td>
+                <td>{{ pdata.f1_score }}%</td>
+                <td class="text-muted">{{ pdata.support }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Predictions History Table -->
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-clock-history text-secondary"></i>
+      <span class="fw-bold">Recent Heat Wave Inference Logs</span>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Location</th>
+            <th>Observed Temp</th>
+            <th>Humidity</th>
+            <th>Heat Index</th>
+            <th>Predicted Risk</th>
+            <th>Confidence</th>
+            <th>Model</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pred in recent_predictions %}
+          <tr>
+            <td><code>#PRED-{{ pred.id }}</code></td>
+            <td class="fw-semibold">{{ pred.location.name if pred.location else 'Unknown' }}</td>
+            <td>{{ pred.temperature }}°C</td>
+            <td>{{ pred.humidity }}%</td>
+            <td class="fw-semibold">{{ pred.heat_index }}°C</td>
+            <td>
+              <span class="badge-risk-{{ pred.predicted_risk.lower() }}">{{ pred.predicted_risk }}</span>
+            </td>
+            <td><strong>{{ "%0.1f"|format(pred.confidence * 100) }}%</strong></td>
+            <td class="text-muted small">{{ pred.model_name }}</td>
+            <td class="text-muted small">{{ pred.created_at.strftime('%d %b, %H:%M') }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-muted">No prediction history recorded yet. Run a prediction above.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ml_prediction.js') }}"></script>
+{% endblock %}

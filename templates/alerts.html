@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Early Warning & Alert Center{% endblock %}
+{% block page_title %}Early Warning & Emergency Alert Center{% endblock %}
+
+{% block content %}
+<!-- Metrics Row -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="card p-3 border-start border-4 border-danger h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Pending Active Warnings</div>
+          <div class="fs-2 fw-bold text-danger">{{ active_count }}</div>
+          <div class="text-muted small">Requires immediate field response</div>
+        </div>
+        <div class="p-3 bg-danger-subtle text-danger rounded-circle">
+          <i class="bi bi-bell-fill fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="card p-3 border-start border-4 border-warning h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Extreme Emergencies</div>
+          <div class="fs-2 fw-bold text-warning">{{ extreme_count }}</div>
+          <div class="text-muted small">Red Alert emergency protocols</div>
+        </div>
+        <div class="p-3 bg-warning-subtle text-warning rounded-circle">
+          <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="card p-3 border-start border-4 border-success h-100">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Resolved Warnings</div>
+          <div class="fs-2 fw-bold text-success">{{ resolved_count }}</div>
+          <div class="text-muted small">Archived disaster responses</div>
+        </div>
+        <div class="p-3 bg-success-subtle text-success rounded-circle">
+          <i class="bi bi-check-circle-fill fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alerts Table Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-broadcast text-danger"></i>
+      <span class="fw-bold">Early Warning Log Registry</span>
+    </div>
+
+    <!-- Filter Form -->
+    <form method="GET" action="{{ url_for('alerts.index') }}" class="d-flex align-items-center gap-2">
+      <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Status: Active</option>
+        <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Status: Resolved</option>
+      </select>
+      <select name="level" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="all" {% if level_filter == 'all' %}selected{% endif %}>Severity: All</option>
+        <option value="high" {% if level_filter == 'high' %}selected{% endif %}>Severity: High</option>
+        <option value="extreme" {% if level_filter == 'extreme' %}selected{% endif %}>Severity: Extreme</option>
+      </select>
+      {% if status_filter != 'all' or level_filter != 'all' %}
+      <a href="{{ url_for('alerts.index') }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
+        <i class="bi bi-x-lg"></i>
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Location</th>
+            <th>Severity</th>
+            <th>Observed Temp</th>
+            <th>Trigger Cause & Impact</th>
+            <th>Status</th>
+            <th>Dispatched</th>
+            <th>Trigger Time</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alert in alerts %}
+          <tr>
+            <td><code>#ALT-{{ "%04d"|format(alert.id) }}</code></td>
+            <td class="fw-bold">{{ alert.location.name if alert.location else 'Zone' }}</td>
+            <td>
+              <span class="badge-risk-{{ alert.alert_level.lower() }}">{{ alert.alert_level }}</span>
+            </td>
+            <td><strong class="text-danger">{{ alert.temperature }}°C</strong></td>
+            <td style="max-width: 280px;">
+              <div class="small fw-semibold text-dark text-truncate" title="{{ alert.reason }}">{{ alert.reason }}</div>
+              <div class="text-muted small text-truncate" title="{{ alert.recommended_action }}">{{ alert.recommended_action }}</div>
+            </td>
+            <td>
+              {% if alert.status == 'Active' %}
+                <span class="badge bg-danger">Active</span>
+              {% else %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Resolved</span>
+              {% endif %}
+            </td>
+            <td>
+              <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="showDispatchModal({{ alert.id }})" title="View Simulated Broadcast Log">
+                <i class="bi bi-broadcast-pin text-primary"></i> Telemetry
+              </button>
+            </td>
+            <td class="text-muted small">{{ alert.created_at.strftime('%d %b, %H:%M') }}</td>
+            <td>
+              {% if alert.status == 'Active' %}
+              <form method="POST" action="{{ url_for('alerts.resolve', id=alert.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2">
+                  <i class="bi bi-check2"></i> Resolve
+                </button>
+              </form>
+              {% else %}
+              <span class="text-muted small"><i class="bi bi-check2-all text-success"></i> Done</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-muted">No alert records match the selected filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Simulated Broadcast Telemetry Modal -->
+<div class="modal fade" id="telemetryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-broadcast text-primary me-2"></i> Simulated Broadcast Dispatch Telemetry</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="telemetryLoading" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div> Fetching telemetry stream...
+        </div>
+        <div id="telemetryContent" class="d-none">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> <strong>Simulation Transparency:</strong> Realistic telecommunication delivery pipeline simulation. Demonstrates automated broadcast channels without deploying paid SMS gateways.
+          </div>
+          <div class="list-group" id="telemetryList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showDispatchModal(alertId) {
+  const modal = new bootstrap.Modal(document.getElementById('telemetryModal'));
+  modal.show();
+
+  const loading = document.getElementById('telemetryLoading');
+  const content = document.getElementById('telemetryContent');
+  const list = document.getElementById('telemetryList');
+
+  loading.classList.remove('d-none');
+  content.classList.add('d-none');
+
+  fetch(`/alerts/dispatch-log/${alertId}`)
+    .then(res => res.json())
+    .then(data => {
+      loading.classList.add('d-none');
+      content.classList.remove('d-none');
+      list.innerHTML = '';
+
+      data.logs.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-action flex-column align-items-start py-3';
+        item.innerHTML = `
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1 fw-bold text-dark"><i class="bi bi-send-check text-success me-2"></i>${log.channel}</h6>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">${log.status}</span>
+          </div>
+          <p class="mb-1 text-secondary small">${log.details}</p>
+          <div class="d-flex justify-content-between small text-muted">
+            <span>Protocol: <code>${log.protocol}</code></span>
+            <span>Timestamp: ${log.timestamp}</span>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    })
+    .catch(err => {
+      loading.innerHTML = '<span class="text-danger">Failed to load dispatch telemetry.</span>';
+    });
+}
+</script>
+{% endblock %}
