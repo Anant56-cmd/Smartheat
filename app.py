@@ -59,6 +59,13 @@ def create_app(config_class=Config):
     def internal_server_error(e):
         return render_template('500.html'), 500
 
+    # Favicon route for direct browser requests
+    @app.route('/favicon.ico')
+    def favicon():
+        from flask import send_from_directory
+        return send_from_directory(os.path.join(app.root_path, 'static', 'img'),
+                                   'favicon.svg', mimetype='image/svg+xml')
+
     return app
 
 if __name__ == '__main__':
